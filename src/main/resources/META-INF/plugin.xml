@@ -10,5 +10,10 @@
                          shortName="RequiredFields"
                          displayName="Input class check"
                          implementationClass="com.bercut.inspections.RequiredFieldsInspection"/>
+        <localInspection groupName="Group.names.class.undesirableMethods"
+                         enabledByDefault="true"
+                         shortName="PrimitiveType"
+                         displayName="Primitive type fields check"
+                         implementationClass="com.bercut.inspections.PrimitiveFieldsInspection"/>
     </extensions>
 </idea-plugin>

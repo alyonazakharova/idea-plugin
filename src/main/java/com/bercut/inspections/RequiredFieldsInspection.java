@@ -43,7 +43,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                                 problems.registerProblem(
                                         classReference,
                                         String.format("Field %s is required and cannot be null", psiField.getName()),
-                                        ProblemHighlightType.ERROR);
+                                        ProblemHighlightType.GENERIC_ERROR);
                             }
                         }
                     }
