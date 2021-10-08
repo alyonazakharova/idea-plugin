@@ -1,0 +1,14 @@
+<idea-plugin url='https://github.com/nolequen/idea-inspections-plugin'>
+    <id>ExtraJavaInspections</id>
+    <name>Dummy Inspector</name>
+    <vendor email="alena.zakharova@bercut.com"/>
+    <description>Some Java code inspections special for automated testing team.</description>
+    <depends>com.intellij.modules.java</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <localInspection groupName="Group.names.class.undesirableMethods"
+                         enabledByDefault="true"
+                         shortName="RequiredFields"
+                         displayName="Input class check"
+                         implementationClass="com.bercut.inspections.RequiredFieldsInspection"/>
+    </extensions>
+</idea-plugin>

@@ -1,0 +1,27 @@
+plugins {
+    id 'org.jetbrains.intellij' version '0.7.2'
+}
+
+apply plugin: 'java'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'idea'
+
+group 'com.bercut'
+version '0.0.1'
+
+intellij {
+    updateSinceUntilBuild false
+    plugins = ['java']
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+jar.baseName("idea-plugin")
+
+repositories {
+    mavenCentral()
+}
