@@ -51,7 +51,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                     if (!notSetFields.isEmpty()) {
                         problems.registerProblem(
                                 classReference,
-                                String.format("The following fields are required and cannot be null:\n%s",
+                                String.format("The following fields are required and cannot be null: %s",
                                         notSetFields.stream().map(PsiField::getName).collect(Collectors.toList())),
                                 new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength()));
                     }
@@ -75,7 +75,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
             for (PsiField psiField : psiFields) {
                 PsiAnnotation[] psiAnnotations = psiField.getAnnotations();
                 if (psiField.getType() instanceof PsiPrimitiveType) {
-                    if (psiField.getName().toLowerCase().contains("sigos")) {
+                    if (psiField.getName().toLowerCase().contains("sigostest")) {
                         requiredFields.add(psiField);
                     }
                 } else {
