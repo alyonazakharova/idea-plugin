@@ -18,7 +18,8 @@ public class RequiredSettersFix implements LocalQuickFix {
 
     public RequiredSettersFix(@NotNull List<PsiField> notSetFields, int offset) {
         for (PsiField field : notSetFields) {
-            // boolean isSigosTest -> setSigosTest
+            // boolean isSomething -> setSomething
+            // Boolean isSomething -> setIsSomething
             if (field.getType() instanceof PsiPrimitiveType && field.getName().startsWith("is")) {
                 setterText.append("\n.set").append(StringUtils.capitalize(field.getName().substring(2))).append("()");
             } else {

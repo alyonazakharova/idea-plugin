@@ -2,6 +2,7 @@ package com.bercut.inspections;
 
 import com.bercut.fixes.RequiredSettersFix;
 import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool;
+import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.psi.*;
 import org.jetbrains.annotations.NotNull;
@@ -26,98 +27,98 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                 if (expression == null) {
                     return;
                 }
+
                 PsiJavaCodeReferenceElement classReference = expression.getClassOrAnonymousClassReference();
-                if (classReference == null) {
+
+                if (!isInputClass(classReference)) {
                     return;
                 }
 
-                if (isInputClass(classReference)) {
-                    PsiClass psiClass = (PsiClass) classReference.resolve();
-                    List<PsiField> requiredFields = getRequiredFields(psiClass);
+                PsiClass psiClass = (PsiClass) classReference.resolve();
+                List<PsiField> requiredFields = getRequiredFields(psiClass);
 
-                    PsiElement root = getRoot(expression);
-                    String expr = root.getText().toLowerCase();
+                PsiElement root = getRoot(expression);
+                String setters = root.getText().toLowerCase();
 
-                    List<PsiField> notSetFields = new ArrayList<>();
+                List<PsiField> notSetFields = new ArrayList<>();
+                List<PsiField> fieldsWithDefaultValue = new ArrayList<>();
 
-                    for (PsiField psiField : requiredFields) {
-                        if (!expr.contains("set" + psiField.getName().toLowerCase())) {
-                            if (!isSigosPresent(expr, psiField)) {
-                                notSetFields.add(psiField);
-                            }
+                for (PsiField psiField : requiredFields) {
+                    if (!isSetterPresent(setters, psiField)) {
+                        if (psiField.getType() instanceof PsiPrimitiveType || psiField.hasInitializer()) {
+                            fieldsWithDefaultValue.add(psiField);
+                        } else {
+                            notSetFields.add(psiField);
                         }
                     }
+                }
 
-                    if (!notSetFields.isEmpty()) {
-                        problems.registerProblem(
-                                classReference,
-                                String.format("The following fields are required and cannot be null: %s",
-                                        notSetFields.stream().map(PsiField::getName).collect(Collectors.toList())),
-                                new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength()));
-                    }
+                if (!notSetFields.isEmpty()) {
+                    problems.registerProblem(
+                            classReference,
+                            String.format("The following fields are required and cannot be null: %s",
+                                    notSetFields.stream().map(PsiField::getName).collect(Collectors.toList())),
+                            ProblemHighlightType.GENERIC_ERROR,
+                            new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength()));
+                }
+
+                if (!fieldsWithDefaultValue.isEmpty()) {
+                    problems.registerProblem(
+                            classReference,
+                            String.format("The following fields have default values but not set: %s",
+                                    fieldsWithDefaultValue.stream().map(PsiField::getName).collect(Collectors.toList())),
+                            ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
+                            new RequiredSettersFix(fieldsWithDefaultValue, root.getTextOffset() + root.getTextLength()));
                 }
             }
         };
     }
 
     private boolean isInputClass(PsiJavaCodeReferenceElement classReference) {
-        return classReference.getQualifiedName().matches(".*[CG]S[0-9]+Input[s]?");
+        return classReference != null && classReference.getQualifiedName().matches(".*[CG]S[0-9]+Input[s]?");
     }
 
     private List<PsiField> getRequiredFields(PsiClass psiClass) {
         List<PsiField> requiredFields = new ArrayList<>();
         if (psiClass != null) {
-            List<PsiField> psiFields = Arrays.stream(psiClass.getAllFields())
-                    .filter(psiField -> !"notNullErrorTemplate".equals(psiField.getName())
-                            && !"nullableErrorTemplate".equals(psiField.getName()))
-                    .collect(Collectors.toList());
-
-            for (PsiField psiField : psiFields) {
+            for (PsiField psiField : psiClass.getFields()) {
                 PsiAnnotation[] psiAnnotations = psiField.getAnnotations();
-                if (psiField.getType() instanceof PsiPrimitiveType) {
-                    if (psiField.getName().toLowerCase().contains("sigostest")) {
-                        requiredFields.add(psiField);
-                    }
-                } else {
-                    // проверка полей, которые имеют значение по умолчанию без аннотации @DefaultValue
-                    if (!psiField.hasInitializer()) {
-                        long nonRequiredCount = Arrays.stream(psiAnnotations)
-                                .map(PsiAnnotation::getQualifiedName)
-                                .filter(Objects::nonNull)
-                                .filter(name -> name.contains("OptionalInput") || name.contains("DefaultValue")) // кажется, можно убрать DefaultValue, потому что было проверено в условии выше
-                                .count();
+                PsiAnnotation annotation = Arrays.stream(psiAnnotations)
+                        .filter(a -> Objects.requireNonNull(a.getQualifiedName()).contains("OptionalInput"))
+                        .findFirst()
+                        .orElse(null);
 
-                        if (nonRequiredCount == 0) {
-                            requiredFields.add(psiField);
-                        }
-                    }
+                if (annotation == null) {
+                    requiredFields.add(psiField);
                 }
             }
         }
         return requiredFields;
     }
 
-
+    // если объект класса инпутов записывается в переменную (например, GS1Inputs gs1Inputs = new GS1Inputs()),
+    // "корневым элементом" в данном случае будет объект класса PsiLocalVariable
+    // если создаем объект класса инпутов без записи в переменную, сразу как параметр метода (globalSteps.gs1(new GS1Inputs()))
+    // "корневой элемент" - PsiExpressionList
     private PsiElement getRoot(PsiNewExpression expression) {
         PsiElement rootElement = expression;
         PsiElement tmpRootElement = expression.getParent();
-        while (!rootIsAchieved(tmpRootElement)) {
+        while (!(tmpRootElement instanceof PsiExpressionList || tmpRootElement instanceof PsiLocalVariable)) {
             rootElement = tmpRootElement;
             tmpRootElement = tmpRootElement.getParent();
         }
         return rootElement;
     }
 
-    private boolean rootIsAchieved(PsiElement psiElement) {
-        return psiElement instanceof PsiExpressionList || psiElement instanceof PsiLocalVariable;
-    }
-
-    // если поле isSigosTest примитивное то setSigosTest
-    // если Boolean - setIsSigosTest
-    private boolean isSigosPresent(String settersChain, PsiField psiField) {
-        if (psiField.getName().toLowerCase().contains("sigostest")) {
-            return settersChain.toLowerCase().contains("sigostest");
+    // boolean isSomething -> setSomething
+    // Boolean isSomething -> setIsSomething
+    private boolean isSetterPresent(String settersChain, PsiField field) {
+        String nameToCheck;
+        if (field.getType() instanceof PsiPrimitiveType && field.getName().startsWith("is")) {
+            nameToCheck = field.getName().substring(2).toLowerCase();
+        } else {
+            nameToCheck = field.getName().toLowerCase();
         }
-        return false;
+        return settersChain.toLowerCase().contains("set" + nameToCheck);
     }
 }
