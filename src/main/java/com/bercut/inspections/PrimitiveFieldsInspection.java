@@ -1,7 +1,9 @@
 package com.bercut.inspections;
 
 import com.intellij.codeInspection.*;
-import com.intellij.psi.*;
+import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiPrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

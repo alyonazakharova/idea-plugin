@@ -1,5 +1,6 @@
 package com.bercut.inspections;
 
+import com.bercut.fixes.RequiredFieldSetterFix;
 import com.intellij.codeInspection.AbstractBaseJavaLocalInspectionTool;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.ProblemsHolder;
@@ -31,21 +32,45 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                     return;
                 }
 
+                //todo
+//                PsiElement lastChild = expression.getLastChild();
+//                lastChild.addAfter()
+
                 if (isInputClass(classReference)) {
                     PsiClass psiClass = (PsiClass) classReference.resolve();
                     List<PsiField> requiredFields = getRequiredFields(psiClass);
 
-                    // check if all the required fields are set
-                    String expr = getAllSetters(expression).toLowerCase();
+//                    String expr = getAllSetters(expression).toLowerCase();
+                    PsiElement root = getRoot(expression);
+                    String expr = root.getText().toLowerCase();
+
+                    List<PsiField> notSetFields = new ArrayList<>();
+
                     for (PsiField psiField : requiredFields) {
                         if (!expr.contains("set" + psiField.getName().toLowerCase())) {
                             if (!isSigosPresent(expr, psiField)) {
-                                problems.registerProblem(
-                                        classReference,
-                                        String.format("Field %s is required and cannot be null", psiField.getName()),
-                                        ProblemHighlightType.GENERIC_ERROR);
+//                                problems.registerProblem(
+//                                        classReference,
+//                                        String.format("Field %s is required and cannot be null", psiField.getName()),
+//                                        ProblemHighlightType.GENERIC_ERROR);
+
+                                notSetFields.add(psiField);
+
+//                                problems.registerProblem(
+//                                        classReference,
+//                                        String.format("Field %s is required and cannot be null (%s & %s: %s)",
+//                                                psiField.getName(), root.getTextOffset(), root.getTextLength(),
+//                                                root.getText()),
+//                                        new RequiredFieldSetterFix(psiField, root));
                             }
                         }
+                    }
+
+                    if (!notSetFields.isEmpty()) {
+                        problems.registerProblem(
+                                classReference,
+                                String.format("The following fields are required and cannot be null:\n%s", notSetFields),
+                                new RequiredFieldSetterFix(notSetFields, root));
                     }
                 }
             }
@@ -75,14 +100,17 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                         requiredFields.add(psiField);
                     }
                 } else {
-                    long nonRequiredCount = Arrays.stream(psiAnnotations)
-                            .map(PsiAnnotation::getQualifiedName)
-                            .filter(Objects::nonNull)
-                            .filter(name -> name.contains("OptionalInput") || name.contains("DefaultValue"))
-                            .count();
+                    // проверка полей, которые имеют значение по умолчанию без аннотации @DefaultValue
+                    if (!psiField.hasInitializer()) {
+                        long nonRequiredCount = Arrays.stream(psiAnnotations)
+                                .map(PsiAnnotation::getQualifiedName)
+                                .filter(Objects::nonNull)
+                                .filter(name -> name.contains("OptionalInput") || name.contains("DefaultValue")) // можно убрать DefaultValue, потому что было проверено в условии выше
+                                .count();
 
-                    if (nonRequiredCount == 0) {
-                        requiredFields.add(psiField);
+                        if (nonRequiredCount == 0) {
+                            requiredFields.add(psiField);
+                        }
                     }
                 }
             }
@@ -90,18 +118,30 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
         return requiredFields;
     }
 
-    private String getAllSetters(PsiNewExpression expression) {
+//    private String getAllSetters(PsiNewExpression expression) {
+//        PsiElement rootElement = expression;
+//        PsiElement prevElement = expression;
+//        PsiElement tmpRootElement = expression.getParent();
+//        while (!rootIsAchieved(tmpRootElement)) {
+//            prevElement = rootElement;
+//            rootElement = tmpRootElement;
+//            tmpRootElement = tmpRootElement.getParent();
+//        }
+//        rootElement = prevElement;
+//        return rootElement.getText();
+//    }
+
+    private PsiElement getRoot(PsiNewExpression expression) {
         PsiElement rootElement = expression;
         PsiElement prevElement = expression;
         PsiElement tmpRootElement = expression.getParent();
-        // stop if PsiLocalVariable || PsiExpressionsList
         while (!rootIsAchieved(tmpRootElement)) {
             prevElement = rootElement;
             rootElement = tmpRootElement;
             tmpRootElement = tmpRootElement.getParent();
         }
-        rootElement = prevElement;
-        return rootElement.getText();
+//        rootElement = prevElement;
+        return rootElement;
     }
 
     private boolean rootIsAchieved(PsiElement psiElement) {
