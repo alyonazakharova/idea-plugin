@@ -65,7 +65,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                 if (!fieldsWithDefaultValue.isEmpty()) {
                     problems.registerProblem(
                             classReference,
-                            String.format("The following fields have default values but not set: %s",
+                            String.format("The following fields are not set (but have default values): %s",
                                     fieldsWithDefaultValue.stream().map(PsiField::getName).collect(Collectors.toList())),
                             ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
                             new RequiredSettersFix(fieldsWithDefaultValue, root.getTextOffset() + root.getTextLength()));

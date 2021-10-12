@@ -7,9 +7,12 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class RequiredSettersFix implements LocalQuickFix {
@@ -38,6 +41,7 @@ public class RequiredSettersFix implements LocalQuickFix {
     public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
         final PsiElement element = descriptor.getPsiElement();
         PsiDocumentManager psiDocumentManager = PsiDocumentManager.getInstance(project);
+        CodeStyleManager codeStyleManager = CodeStyleManager.getInstance(project);
         PsiFile containingFile = element.getContainingFile();
         Document document = psiDocumentManager.getDocument(containingFile);
         if (document != null) {
@@ -45,6 +49,8 @@ public class RequiredSettersFix implements LocalQuickFix {
             psiDocumentManager.doPostponedOperationsAndUnblockDocument(document);
             psiDocumentManager.commitDocument(document);
             FileDocumentManager.getInstance().saveDocument(document);
+            codeStyleManager.reformatText(containingFile, Collections.singletonList(containingFile.getTextRange()));
+
         }
     }
 }
