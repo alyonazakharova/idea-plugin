@@ -7,10 +7,7 @@ import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.psi.*;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -41,12 +38,24 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                 String setters = root.getText().toLowerCase();
 
                 List<PsiField> notSetFields = new ArrayList<>();
-                List<PsiField> fieldsWithDefaultValue = new ArrayList<>();
+                PsiField primitiveSigosTestField = null;
+                List<PsiField> initializedWithoutDefaultValueFields = new ArrayList<>();
 
                 for (PsiField psiField : requiredFields) {
                     if (!isSetterPresent(setters, psiField)) {
-                        if (psiField.getType() instanceof PsiPrimitiveType || psiField.hasInitializer()) {
-                            fieldsWithDefaultValue.add(psiField);
+                        if (psiField.getType() instanceof PsiPrimitiveType) {
+                            if (psiField.getName().toLowerCase().contains("sigostest")) {
+                                primitiveSigosTestField = psiField;
+                            }
+                        } else if (psiField.hasInitializer()) {
+                            PsiAnnotation[] psiAnnotations = psiField.getAnnotations();
+                            PsiAnnotation annotation = Arrays.stream(psiAnnotations)
+                                    .filter(a -> Objects.requireNonNull(a.getQualifiedName()).contains("DefaultValue"))
+                                    .findFirst()
+                                    .orElse(null);
+                            if (annotation == null) {
+                                initializedWithoutDefaultValueFields.add(psiField);
+                            }
                         } else {
                             notSetFields.add(psiField);
                         }
@@ -59,19 +68,35 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                             String.format("The following fields are required and cannot be null: %s",
                                     notSetFields.stream().map(PsiField::getName).collect(Collectors.toList())),
                             ProblemHighlightType.GENERIC_ERROR,
-                            new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength()));
+                            new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength())
+                    );
                 }
 
-                if (!fieldsWithDefaultValue.isEmpty()) {
+                if (primitiveSigosTestField != null) {
                     problems.registerProblem(
                             classReference,
-                            String.format("The following fields are not set (but have default values): %s",
-                                    fieldsWithDefaultValue.stream().map(PsiField::getName).collect(Collectors.toList())),
+                            String.format("Field %s is required but not set", primitiveSigosTestField.getName()),
                             ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                            new RequiredSettersFix(fieldsWithDefaultValue, root.getTextOffset() + root.getTextLength()));
+                            new RequiredSettersFix(
+                                    Collections.singletonList(primitiveSigosTestField),
+                                    root.getTextOffset() + root.getTextLength()
+                            )
+                    );
+                }
+
+                if (!initializedWithoutDefaultValueFields.isEmpty()) {
+                    problems.registerProblem(
+                            classReference,
+                            String.format("The following fields are initialized but not annotated with DefaultValue: %s"
+                                            + "\nConsider refactoring.",
+                                    initializedWithoutDefaultValueFields.stream().map(PsiField::getName).collect(Collectors.toList())),
+                            ProblemHighlightType.GENERIC_ERROR_OR_WARNING
+                    );
                 }
             }
-        };
+        }
+
+                ;
     }
 
     private boolean isInputClass(PsiJavaCodeReferenceElement classReference) {

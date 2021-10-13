@@ -1,6 +1,6 @@
 <idea-plugin url='https://github.com/nolequen/idea-inspections-plugin'>
     <id>ExtraJavaInspections</id>
-    <name>Dummy Inspector</name>
+    <name>Required Fields Inspections</name>
     <vendor email="alena.zakharova@bercut.com"/>
     <description>Some Java code inspections special for automated testing team.</description>
     <depends>com.intellij.modules.java</depends>

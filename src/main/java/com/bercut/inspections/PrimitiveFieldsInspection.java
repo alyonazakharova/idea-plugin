@@ -26,7 +26,7 @@ public class PrimitiveFieldsInspection extends AbstractBaseJavaLocalInspectionTo
             List<ProblemDescriptor> problems = new ArrayList<>();
             if (annotation != null) {
                 problems.add(manager.createProblemDescriptor(field,
-                        String.format("Primitive type field %s must not be annotated with OptionalInput", field.getName()),
+                        String.format("Primitive type field %s should not be annotated with OptionalInput", field.getName()),
                         new RemoveAnnotationQuickFix(annotation, null),
                         ProblemHighlightType.GENERIC_ERROR_OR_WARNING, true));
             }
