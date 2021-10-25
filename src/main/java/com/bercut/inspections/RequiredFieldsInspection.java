@@ -44,7 +44,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                 for (PsiField psiField : requiredFields) {
                     if (!isSetterPresent(setters, psiField)) {
                         if (psiField.getType() instanceof PsiPrimitiveType) {
-                            if (psiField.getName().toLowerCase().contains("sigostest")) {
+                            if (Arrays.asList("sigos", "sigosTest", "isSigosTest").contains(psiField.getName())) {
                                 primitiveSigosTestField = psiField;
                             }
                         } else if (psiField.hasInitializer()) {

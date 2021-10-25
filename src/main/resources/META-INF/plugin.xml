@@ -1,6 +1,6 @@
 <idea-plugin url='https://github.com/nolequen/idea-inspections-plugin'>
     <id>ExtraJavaInspections</id>
-    <name>Required Fields Inspections</name>
+    <name>Required Fields Inspection</name>
     <vendor email="alena.zakharova@bercut.com"/>
     <description>Some Java code inspections special for automated testing team.</description>
     <depends>com.intellij.modules.java</depends>
@@ -15,5 +15,10 @@
                          shortName="PrimitiveType"
                          displayName="Primitive type fields check"
                          implementationClass="com.bercut.inspections.PrimitiveFieldsInspection"/>
+        <localInspection groupName="Group.names.class.undesirableMethods"
+                         enabledByDefault="true"
+                         shortName="TestCaseID"
+                         displayName="Class annotation check"
+                         implementationClass="com.bercut.inspections.AnnotationInspection"/>
     </extensions>
 </idea-plugin>

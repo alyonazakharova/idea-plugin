@@ -7,7 +7,7 @@ apply plugin: 'org.jetbrains.intellij'
 apply plugin: 'idea'
 
 group 'com.bercut'
-version '0.0.1'
+version '0.1.1'
 
 intellij {
     updateSinceUntilBuild false
