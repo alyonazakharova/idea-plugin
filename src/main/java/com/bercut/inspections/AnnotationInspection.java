@@ -6,6 +6,7 @@ import com.intellij.codeInspection.ProblemDescriptor;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiNameValuePair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +19,7 @@ public class AnnotationInspection extends AbstractBaseJavaLocalInspectionTool {
     @Override
     public ProblemDescriptor @Nullable [] checkClass(@NotNull PsiClass aClass, @NotNull InspectionManager manager, boolean isOnTheFly) {
         String className = aClass.getName();
-        if (className == null || !className.endsWith("Test")) {
+        if (className == null || !className.matches("Chapter\\d+Section\\d+Case\\d+Test")) {
             return null;
         }
 
@@ -43,6 +44,18 @@ public class AnnotationInspection extends AbstractBaseJavaLocalInspectionTool {
                         true,
                         ProblemHighlightType.GENERIC_ERROR,
                         true));
+            } else {
+                PsiNameValuePair[] attributes = annotation.getParameterList().getAttributes();
+                if (attributes.length > 0) {
+                    PsiNameValuePair nameValuePair = attributes[0];
+                    if (nameValuePair.getLiteralValue() == null || nameValuePair.getLiteralValue().isEmpty())
+                        problems.add(manager.createProblemDescriptor(
+                                nameValuePair,
+                                "Annotation value cannot be empty",
+                                true,
+                                ProblemHighlightType.GENERIC_ERROR,
+                                true));
+                }
             }
 
             if (!problems.isEmpty()) {

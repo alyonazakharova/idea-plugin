@@ -67,7 +67,7 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                             classReference,
                             String.format("The following fields are required and cannot be null: %s",
                                     notSetFields.stream().map(PsiField::getName).collect(Collectors.toList())),
-                            ProblemHighlightType.GENERIC_ERROR,
+                            ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
                             new RequiredSettersFix(notSetFields, root.getTextOffset() + root.getTextLength())
                     );
                 }
@@ -90,13 +90,11 @@ public final class RequiredFieldsInspection extends AbstractBaseJavaLocalInspect
                             String.format("The following fields are initialized but not annotated with DefaultValue: %s"
                                             + "\nConsider refactoring.",
                                     initializedWithoutDefaultValueFields.stream().map(PsiField::getName).collect(Collectors.toList())),
-                            ProblemHighlightType.GENERIC_ERROR_OR_WARNING
+                            ProblemHighlightType.WEAK_WARNING
                     );
                 }
             }
-        }
-
-                ;
+        };
     }
 
     private boolean isInputClass(PsiJavaCodeReferenceElement classReference) {
